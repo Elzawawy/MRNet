@@ -1,12 +1,11 @@
 import numpy as np
 import os
+from scipy import ndimage as nd
 
 def apply_three_slice_trans(data_path, trans_path, dilation=2):
     npy_files = [f for f in sorted(os.listdir(data_path)) if f[-4:]=='.npy']
     temp = []
     new_stacks = []
-    print("Found files:",npy_files[0],npy_files[1],",.....")
-    print("Applying Transformation:============")
     for file in npy_files:
         orig_stack=np.load(data_path+'/'+file)
         mid_slice_idx=orig_stack.shape[0]//2
@@ -16,8 +15,6 @@ def apply_three_slice_trans(data_path, trans_path, dilation=2):
         temp.extend([lower_slice,mid_slice,upper_slice])
         new_stacks.append(np.array(temp))
         temp.clear()
-    print("Done with Transformation:============")
-    print("Creating",trans_path,"....")
     np.save(trans_path,np.array(new_stacks))
 
 def apply_five_class_labels(abn_label_path, acl_label_path, men_label_path, trans_path):
@@ -38,7 +35,22 @@ def apply_five_class_labels(abn_label_path, acl_label_path, men_label_path, tran
             labels[i,0] = 1
     np.save(trans_path,labels)
 
-
+def apply_interpolation_transformation(data_path, trans_path,slices):
+    npy_files = [f for f in sorted(os.listdir(data_path)) if f[-4:]=='.npy']
+    new_stacks=[]
+    for file in npy_files:
+      orig_file_path=data_path+'/'+file
+      print('Converting {}'.format(orig_file_path))
+      orig_stack=np.load(orig_file_path)
+      print('Number of slices for this scan: {}'.format(orig_stack.shape[0]))
+      interpolation_factors = [w/float(f) for w,f in zip([slices,256,256], orig_stack.shape)]
+      print('Interpolation factors for this scan: {}'.format(interpolation_factors))
+      interpolated_scan = nd.interpolation.zoom(orig_stack, zoom=interpolation_factors)
+      new_stacks.append(interpolated_scan)
+      
+    np.save(trans_path,new_stacks)
+    print('===============================')
+    print('===============================')
 
     
     
